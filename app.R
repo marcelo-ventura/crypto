@@ -84,20 +84,32 @@ server <- function(input, output){
                                                 )
                                  })
   
-  valores.ajustados <- reactive(hyperblm(`Closing price(USD)`~ `Highest price(USD)`+
+  valores.ajustados <- reactive(if(input$log==FALSE){
+                                hyperblm(`Closing price(USD)`~ `Highest price(USD)`+
                                                             `Lowest price(USD)`+
                                                             `Volume(USD)`+
                                                             `Marketcap(USD)`,
                                                              data=moeda()
                                           )$fitted.values
+                                                     }else{
+                                hyperblm(log(`Closing price(USD)`)~ log(`Highest price(USD)`)+
+                                                                  log(`Lowest price(USD)`)+
+                                                                  log(`Volume(USD)`)+
+                                                                  log(`Marketcap(USD)`),
+                                                                data=moeda()
+                                         )$fitted.values                  
+                                                           }
                                 )
                       
                      
   DATA<-reactive(data.frame(
                             rbind(data.frame('dia'=1:nrow(moeda()),
                                              'id'=rep("reais",nrow(moeda())),
-                                             'vetor'=moeda()$`Closing price(USD)`
-                                             )
+                                             'vetor'=if(input$log==F){moeda()$`Closing price(USD)`}else{
+                                                                  log(moeda()$`Closing price(USD)`)
+                                                                                                        }
+                                                    )
+                                             
                                   ,
                                   data.frame('dia'=1:nrow(moeda()),
                                              'id'=rep("ajustados",nrow(moeda())),
@@ -105,7 +117,7 @@ server <- function(input, output){
                                              )
                                   )
                             )
-                 )
+                  )
                  
                  
   
