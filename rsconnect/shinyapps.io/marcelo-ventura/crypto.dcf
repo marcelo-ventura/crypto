@@ -5,6 +5,6 @@ account: marcelo-ventura
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 345369
-bundleId: 1415810
+bundleId: 1417081
 url: https://marcelo-ventura.shinyapps.io/crypto/
-when: 1528332899.2537
+when: 1528387042.2877

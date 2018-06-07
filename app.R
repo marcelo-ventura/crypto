@@ -16,7 +16,7 @@ options(scipen=999)
 ui <- shinyUI(fluidPage(theme=shinytheme("superhero"),
                         
                         # Application title
-                        headerPanel("Time series data from coinmarketcap.com"),
+                        headerPanel("Live webscrapper from coinmarketcap.com"),
                         
                         # Sidebar with a slider input for number of bins 
                         sidebarPanel(
