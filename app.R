@@ -9,6 +9,7 @@ library(reshape2)
 library(ggthemes)
 library(GeneralizedHyperbolic)
 library(forecast)
+library(shinycssloaders)
 library(rsconnect)
 
 options(scipen=999)
@@ -21,6 +22,7 @@ ui <- shinyUI(fluidPage(theme=shinytheme("superhero"),
           # Sidebar with a slider input for number of bins 
           sidebarPanel(
           textInput("cripto",label = h3("Type your favorite crypto coin :)")),
+          actionButton("runforrest", "Go!"),
           checkboxInput("log","Work with log-variables",value = T),
           textInput("interval",label = h3("Time interval (eg: 20160531-20160630, or all time)"),value="all time"),
           # Show a plot of the coin
@@ -32,12 +34,13 @@ ui <- shinyUI(fluidPage(theme=shinytheme("superhero"),
                       fluidRow(column(3, verbatimTextOutput("value")))),
           mainPanel(
                     tabsetPanel(type="tabs",
-                    tabPanel("Real data",plotOutput("coinplot")),
-                    tabPanel("Adjusted data",plotOutput("plotadjusted")),
-                    tabPanel("Adjusted vs. real",plotOutput("plotadjreal"))))))
+                    tabPanel("Real data",withSpinner(plotOutput("coinplot"))),
+                    tabPanel("Adjusted data",withSpinner(plotOutput("plotadjusted"))),
+                    tabPanel("Adjusted vs. real",withSpinner(plotOutput("plotadjreal")))))))
 
 # Define server logic required to draw the plot
 server <- function(input, output){
+  observeEvent(input$runforrest, {
   #building database
   paginalida<-reactive({if(paste(input$interval)=="all time"){
     read_html(paste0("https://coinmarketcap.com/currencies/",
@@ -145,7 +148,7 @@ server <- function(input, output){
                                     
       )
   
-}
+})  }
 
 # Run the application 
 shinyApp(ui = ui, server = server)
