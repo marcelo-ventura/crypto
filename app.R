@@ -42,14 +42,14 @@ ui <- shinyUI(fluidPage(theme=shinytheme("superhero"),
 server <- function(input, output){
   observeEvent(input$runforrest, {
   #building database
-  paginalida<-reactive({if(paste(input$interval)=="all time"){
+  page<-reactive({if(paste(input$interval)=="all time"){
     read_html(paste0("https://coinmarketcap.com/currencies/",
                                  input$cripto,
                                  "/historical-data/?start=20130428&end=",format(Sys.Date(),"%Y%m%d")))}else{
     read_html(paste0("https://coinmarketcap.com/currencies/",
                      input$cripto,
                      "/historical-data/?start=",substr(input$interval,1,8),"&end=",substr(input$interval,10,17)))}})
-    moeda<- reactive({data.frame('Day'=paginalida()%>%html_nodes("tbody tr *.text-left")%>%html_text() %>%
+    coin_data<- reactive({data.frame('Day'=page()%>%html_nodes("tbody tr *.text-left")%>%html_text() %>%
                       as.character() %>%
                       gsub("Feb","Fev",.) %>%
                       gsub("Apr","Abr",.) %>%
@@ -59,18 +59,18 @@ server <- function(input, output){
                       gsub("Oct","Out",.) %>%
                       gsub("Dec","Dez",.) %>%
                       as.Date(.,format="%b %d, %Y"))%>%
-    mutate('Opening price(USD)'=paginalida()%>%html_nodes("tbody tr td:nth-child(2)") %>%html_text() %>%
+    mutate('Opening price(USD)'=page()%>%html_nodes("tbody tr td:nth-child(2)") %>%html_text() %>%
              as.numeric()) %>%    
-    mutate('Highest price(USD)'=paginalida()%>%html_nodes("tbody tr td:nth-child(3)")   %>%html_text() %>%
+    mutate('Highest price(USD)'=page()%>%html_nodes("tbody tr td:nth-child(3)")   %>%html_text() %>%
              as.numeric()) %>%
-    mutate('Lowest price(USD)'=paginalida()%>%html_nodes("tbody tr td:nth-child(4)")   %>%html_text() %>%
+    mutate('Lowest price(USD)'=page()%>%html_nodes("tbody tr td:nth-child(4)")   %>%html_text() %>%
              as.numeric())%>%
-    mutate('Closing price(USD)'=paginalida()%>%html_nodes("tbody tr td:nth-child(5)")%>%html_text() %>%
+    mutate('Closing price(USD)'=page()%>%html_nodes("tbody tr td:nth-child(5)")%>%html_text() %>%
              as.numeric())%>%
-    mutate('Volume(USD)'=paginalida()%>%html_nodes("tbody tr td:nth-child(6)")      %>%html_text() %>%
+    mutate('Volume(USD)'=page()%>%html_nodes("tbody tr td:nth-child(6)")      %>%html_text() %>%
              gsub(",","", .)%>%
              as.numeric())%>%
-    mutate('Marketcap(USD)'=paginalida()%>%html_nodes("tbody tr td:nth-child(7)") %>%html_text() %>%
+    mutate('Marketcap(USD)'=page()%>%html_nodes("tbody tr td:nth-child(7)") %>%html_text() %>%
              gsub(",","", .)%>%
              as.numeric())%>%
         arrange(Day) %>%
@@ -78,8 +78,8 @@ server <- function(input, output){
       })
     
   output$coinplot <- renderPlot({
-                                 ggplot(data=moeda(), aes(Day)) + 
-                                        geom_line(aes(y=moeda()[,as.numeric(input$select)])) + 
+                                 ggplot(data=coin_data(), aes(Day)) + 
+                                        geom_line(aes(y=coin_data()[,as.numeric(input$select)])) + 
                                         theme_economist() + 
                                         theme(axis.title.x = element_blank())+
                                         labs(y="USD")+
@@ -87,36 +87,36 @@ server <- function(input, output){
                                                 )
                                  })
   
-  valores.ajustados <- reactive(if(input$log==FALSE){
+  valores.adjusted <- reactive(if(input$log==FALSE){
                                 hyperblm(`Closing price(USD)`~ `Highest price(USD)`+
                                                             `Lowest price(USD)`+
                                                             `Volume(USD)`+
                                                             `Marketcap(USD)`,
-                                                             data=moeda()
+                                                             data=coin_data()
                                           )$fitted.values
                                                      }else{
                                 hyperblm(log(`Closing price(USD)`)~ log(`Highest price(USD)`)+
                                                                   log(`Lowest price(USD)`)+
                                                                   log(`Volume(USD)`)+
                                                                   log(`Marketcap(USD)`),
-                                                                data=moeda()
+                                                                data=coin_data()
                                          )$fitted.values                  
                                                            }
                                 )
                       
                      
   DATA<-reactive(data.frame(
-                            rbind(data.frame('dia'=1:nrow(moeda()),
-                                             'id'=rep("reais",nrow(moeda())),
-                                             'vetor'=if(input$log==F){moeda()$`Closing price(USD)`}else{
-                                                                  log(moeda()$`Closing price(USD)`)
+                            rbind(data.frame('dia'=1:nrow(coin_data()),
+                                             'id'=rep("real",nrow(coin_data())),
+                                             'vetor'=if(input$log==F){coin_data()$`Closing price(USD)`}else{
+                                                                  log(coin_data()$`Closing price(USD)`)
                                                                                                         }
                                                     )
                                              
                                   ,
-                                  data.frame('dia'=1:nrow(moeda()),
-                                             'id'=rep("ajustados",nrow(moeda())),
-                                             'vetor'=valores.ajustados()
+                                  data.frame('dia'=1:nrow(coin_data()),
+                                             'id'=rep("adjusted",nrow(coin_data())),
+                                             'vetor'=valores.adjusted()
                                              )
                                   )
                             )
@@ -125,7 +125,7 @@ server <- function(input, output){
                  
   
   output$plotadjusted <- renderPlot(
-                                    ggplot(data=(filter(DATA(),id=="ajustados")), aes(x=dia, y=vetor, group=id, colour=id))+
+                                    ggplot(data=(filter(DATA(),id=="adjusted")), aes(x=dia, y=vetor, group=id, colour=id))+
                                            geom_line(size=1.15) + 
                                            theme_economist() + 
                                            labs(x="Number of days",y="Prices") + 
